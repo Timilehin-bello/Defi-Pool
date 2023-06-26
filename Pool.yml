@@ -1,0 +1,130 @@
+The procedures listed below can be used to construct the smart contracts for picking pools on Uniswap to generate interest rates based on APY (Annual Percentage Yield).
+
+Choose a pool:
+
+- Create a function that takes a list of pools that are available as input and outputs the pool with the highest APY.
+- Use a method based on the pool's liquidity, trading costs, and other important considerations to iteratively go through the list of pools and get each one's APY.
+- Track the pool with the highest APY by comparing the calculated APY for each pool.
+- The pool with the greatest APY should be returned.
+
+Structure Pool:
+    liquidity: uint256
+    tradingCosts: uint256
+    Other relevant pool data can be added
+
+Structure User:
+    balance: uint256
+    lastDistributionTimestamp: uint256
+
+Variable chosenPool: Pool
+Mapping users: address => User
+
+Function pickPool(pools: Pool[]): public
+    Require pools.length > 0, "No pools provided"
+
+    Variable highestAPYPool: Pool
+    Variable highestAPY: uint256
+
+    For i in 0 to pools.length:
+        Variable currentPool: Pool = pools[i]
+        Variable currentAPY: uint256 = calculateAPY(currentPool)
+
+        If currentAPY > highestAPY:
+            highestAPY = currentAPY
+            highestAPYPool = currentPool
+
+    chosenPool = highestAPYPool
+    Return chosenPool
+
+Function calculateAPY(pool: Pool): internal returns (uint256)
+    # Perform calculations to determine the APY for a given pool
+    # You can use the provided liquidity, trading costs, and other factors here
+
+    # Example calculation:
+    # uint256 apy = (pool.liquidity * 100) / (pool.tradingCosts + 1)
+    # return apy
+
+    # Replace the example calculation with your own logic based on your requirements
+    # and the available data for determining APY
+
+
+Generate Interest:
+- Users can put their money into the pool with the highest APY once it has been chosen to earn interest on their deposits.
+- Create a function that enables users to contribute a certain number of tokens to the chosen pool.
+- Transfer the user's deposited tokens to the smart contract from their wallet.
+- Maintain the balance of the entire pool while updating the user's balance in the smart contract.
+
+
+Function contributeTokens(amount: uint256): public
+    Require chosenPool.liquidity > 0, "No pool chosen"
+
+    Variable user: User = users[msg.sender]
+
+    # Transfer tokens from user's wallet to the smart contract
+    # Assuming ERC20 token transfer
+    # Make sure to approve the contract to spend the tokens first
+    # Token.transferFrom(msg.sender, address(this), amount)
+
+    distributeInterest(user)
+
+    user.balance += amount
+    chosenPool.liquidity += amount
+    
+
+Interest Distribution and Calculation:
+
+- Create a function that computes interest and distributes it to users.
+- Find out how long the money has been in the pool since the last interest distribution.
+- Determine the interest that has accumulated using the APY and term of the pool.
+- According to each user's deposited token balance, distribute the interest proportionally to them all.
+- Update the distributed interest to the user's balance and the overall pool balance as necessary.
+
+
+Function distributeInterest(user: User): internal
+    If user.lastDistributionTimestamp == 0:
+        user.lastDistributionTimestamp = block.timestamp
+        Return
+
+    Variable timeSinceLastDistribution: uint256 = block.timestamp - user.lastDistributionTimestamp
+    If timeSinceLastDistribution == 0:
+        Return
+
+    Variable interest: uint256 = (chosenPool.liquidity * calculateAPY(chosenPool) * timeSinceLastDistribution) / (365 days * 100)
+    Variable totalBalance: uint256 = chosenPool.liquidity + interest
+
+    user.balance = (user.balance * totalBalance) / chosenPool.liquidity
+    user.lastDistributionTimestamp = block.timestamp
+
+    chosenPool.liquidity = totalBalance
+
+
+Withdrawal:
+- Users have the option of withdrawing both their initial deposits and any interest earned.
+- Create a function that enables users to take a certain number of tokens out of the pool.
+- Make that the user has enough money in their account to cover the withdrawal amount.
+- Return the specified tokens to the user's wallet via the smart contract.
+- Update both the user's and the pool's overall balances.
+
+
+Function withdrawTokens(amount: uint256): public
+    Require amount > 0, "Invalid withdrawal amount"
+
+    Variable user: User = users[msg.sender]
+    Require user.balance >= amount, "Insufficient balance"
+
+    distributeInterest(user)
+
+    user.balance -= amount
+    chosenPool.liquidity -= amount
+
+    # Transfer tokens back to user's wallet
+    # Assuming ERC20 token transfer
+    # Token.transfer(msg.sender, amount)
+
+
+
+
+
+
+
+
